@@ -3,11 +3,15 @@ package v1
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/usememos/memos/internal/util"
 	v1pb "github.com/usememos/memos/proto/gen/api/v1"
 	storepb "github.com/usememos/memos/proto/gen/store"
 	"github.com/usememos/memos/store"
@@ -100,6 +104,48 @@ func (s *APIV1Service) UpdateInstanceSetting(ctx context.Context, request *v1pb.
 	}
 
 	return convertInstanceSettingFromStore(instanceSetting), nil
+}
+
+func (s *APIV1Service) UploadInstanceAsset(ctx context.Context, request *v1pb.UploadInstanceAssetRequest) (*v1pb.UploadInstanceAssetResponse, error) {
+	user, err := s.GetCurrentUser(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get current user: %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.Unauthenticated, "user not authenticated")
+	}
+	if user.Role != store.RoleHost {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+
+	if len(request.Content) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "content is empty")
+	}
+	if request.Filename == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "filename is empty")
+	}
+	if !util.ValidateFilename(request.Filename) {
+		return nil, status.Errorf(codes.InvalidArgument, "filename contains invalid characters or format")
+	}
+
+	// Create a random filename to avoid conflicts.
+	filename := fmt.Sprintf("instance-%d-%s", time.Now().UnixNano(), request.Filename)
+	assetsDir := filepath.Join(s.Profile.Data, "assets")
+	if _, err := os.Stat(assetsDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(assetsDir, 0755); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create assets directory: %v", err)
+		}
+	}
+
+	absFilepath := filepath.Join(assetsDir, filename)
+	if err := os.WriteFile(absFilepath, request.Content, 0644); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to write file: %v", err)
+	}
+
+	assetURL := fmt.Sprintf("/o/assets/%s", filename)
+	return &v1pb.UploadInstanceAssetResponse{
+		AssetUrl: assetURL,
+	}, nil
 }
 
 func convertInstanceSettingFromStore(setting *storepb.InstanceSetting) *v1pb.InstanceSetting {

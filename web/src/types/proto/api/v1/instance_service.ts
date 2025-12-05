@@ -241,6 +241,18 @@ export interface UpdateInstanceSettingRequest {
   updateMask?: string[] | undefined;
 }
 
+export interface UploadInstanceAssetRequest {
+  /** Input only. The content of the asset. */
+  content: Uint8Array;
+  /** The filename of the asset. */
+  filename: string;
+}
+
+export interface UploadInstanceAssetResponse {
+  /** The URL of the uploaded asset. */
+  assetUrl: string;
+}
+
 function createBaseInstanceProfile(): InstanceProfile {
   return { owner: "", version: "", mode: "", instanceUrl: "" };
 }
@@ -1090,6 +1102,110 @@ export const UpdateInstanceSettingRequest: MessageFns<UpdateInstanceSettingReque
   },
 };
 
+function createBaseUploadInstanceAssetRequest(): UploadInstanceAssetRequest {
+  return { content: new Uint8Array(0), filename: "" };
+}
+
+export const UploadInstanceAssetRequest: MessageFns<UploadInstanceAssetRequest> = {
+  encode(message: UploadInstanceAssetRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.content.length !== 0) {
+      writer.uint32(10).bytes(message.content);
+    }
+    if (message.filename !== "") {
+      writer.uint32(18).string(message.filename);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UploadInstanceAssetRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUploadInstanceAssetRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.content = reader.bytes();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.filename = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<UploadInstanceAssetRequest>): UploadInstanceAssetRequest {
+    return UploadInstanceAssetRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UploadInstanceAssetRequest>): UploadInstanceAssetRequest {
+    const message = createBaseUploadInstanceAssetRequest();
+    message.content = object.content ?? new Uint8Array(0);
+    message.filename = object.filename ?? "";
+    return message;
+  },
+};
+
+function createBaseUploadInstanceAssetResponse(): UploadInstanceAssetResponse {
+  return { assetUrl: "" };
+}
+
+export const UploadInstanceAssetResponse: MessageFns<UploadInstanceAssetResponse> = {
+  encode(message: UploadInstanceAssetResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.assetUrl !== "") {
+      writer.uint32(10).string(message.assetUrl);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UploadInstanceAssetResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUploadInstanceAssetResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.assetUrl = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<UploadInstanceAssetResponse>): UploadInstanceAssetResponse {
+    return UploadInstanceAssetResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UploadInstanceAssetResponse>): UploadInstanceAssetResponse {
+    const message = createBaseUploadInstanceAssetResponse();
+    message.assetUrl = object.assetUrl ?? "";
+    return message;
+  },
+};
+
 export type InstanceServiceDefinition = typeof InstanceServiceDefinition;
 export const InstanceServiceDefinition = {
   name: "InstanceService",
@@ -1281,6 +1397,51 @@ export const InstanceServiceDefinition = {
               47,
               42,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    /** Uploads an instance asset. */
+    uploadInstanceAsset: {
+      name: "UploadInstanceAsset",
+      requestType: UploadInstanceAssetRequest,
+      requestStream: false,
+      responseType: UploadInstanceAssetResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              28,
+              58,
+              1,
+              42,
+              34,
+              23,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              47,
+              97,
+              115,
+              115,
+              101,
+              116,
+              115,
             ]),
           ],
         },

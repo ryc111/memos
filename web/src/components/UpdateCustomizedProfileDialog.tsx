@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { instanceServiceClient } from "@/grpcweb";
 import { instanceStore } from "@/store";
 import { instanceSettingNamePrefix } from "@/store/common";
 import { InstanceSetting_GeneralSetting_CustomProfile, InstanceSetting_Key } from "@/types/proto/api/v1/instance_service";
@@ -22,7 +23,7 @@ function UpdateCustomizedProfileDialog({ open, onOpenChange, onSuccess }: Props)
   const [customProfile, setCustomProfile] = useState<InstanceSetting_GeneralSetting_CustomProfile>(
     InstanceSetting_GeneralSetting_CustomProfile.fromPartial(instanceGeneralSetting.customProfile || {}),
   );
-
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const setPartialState = (partialState: Partial<InstanceSetting_GeneralSetting_CustomProfile>) => {
@@ -48,6 +49,39 @@ function UpdateCustomizedProfileDialog({ open, onOpenChange, onSuccess }: Props)
     setPartialState({
       description: e.target.value as string,
     });
+  };
+
+  const handleUploadLogoButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    const file = files[0];
+    // Limit file size to 2MB.
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size should be less than 2MB.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const response = await instanceServiceClient.uploadInstanceAsset({
+        filename: file.name,
+        content: new Uint8Array(arrayBuffer),
+      });
+      setPartialState({ logoUrl: response.assetUrl });
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.details);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRestoreButtonClick = () => {
@@ -104,7 +138,27 @@ function UpdateCustomizedProfileDialog({ open, onOpenChange, onSuccess }: Props)
 
           <div className="grid gap-2">
             <Label htmlFor="icon-url">{t("setting.system-section.customize-server.icon-url")}</Label>
-            <Input id="icon-url" type="text" value={customProfile.logoUrl} onChange={handleLogoUrlChanged} placeholder="Enter icon URL" />
+            <div className="flex flex-row justify-start items-center gap-2">
+              <Input
+                id="icon-url"
+                type="text"
+                value={customProfile.logoUrl}
+                onChange={handleLogoUrlChanged}
+                placeholder="Enter icon URL"
+                className="flex-grow"
+              />
+              <Button variant="outline" onClick={handleUploadLogoButtonClick}>
+                {t("common.upload")}
+              </Button>
+              <input
+                type="file"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleLogoFileChange}
+                accept="image/png, image/jpeg, image/webp"
+              />
+              <img className="h-9 w-auto rounded-full" src={customProfile.logoUrl} alt="" />
+            </div>
           </div>
 
           <div className="grid gap-2">

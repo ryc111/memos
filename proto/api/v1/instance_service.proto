@@ -30,6 +30,14 @@ service InstanceService {
     };
     option (google.api.method_signature) = "setting,update_mask";
   }
+
+  // Uploads an instance asset.
+  rpc UploadInstanceAsset(UploadInstanceAssetRequest) returns (UploadInstanceAssetResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/instance/assets"
+      body: "*"
+    };
+  }
 }
 
 // Instance profile message containing basic instance information.
@@ -181,4 +189,16 @@ message UpdateInstanceSettingRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message UploadInstanceAssetRequest {
+  // Input only. The content of the asset.
+  bytes content = 1 [(google.api.field_behavior) = INPUT_ONLY];
+  // The filename of the asset.
+  string filename = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UploadInstanceAssetResponse {
+  // The URL of the uploaded asset.
+  string asset_url = 1;
 }

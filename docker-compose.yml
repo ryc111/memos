@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: memos-postgres
+    environment:
+      POSTGRES_DB: memos
+      POSTGRES_USER: memos
+      # You must create a .env file with DB_PASSWORD=your_secure_password
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U memos -d memos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  memos:
+    # This tells Docker Compose to build the image from the Dockerfile in the current directory.
+    build: .
+    container_name: memos-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - MEMOS_MODE=prod
+      - MEMOS_DRIVER=postgres
+      # The DSN for connecting to the postgres service.
+      - MEMOS_DSN=postgresql://memos:${DB_PASSWORD}@postgres:5432/memos?sslmode=disable
+      # This sets the data directory inside the container to /var/opt/memos
+      - MEMOS_DATA=/var/opt/memos
+    ports:
+      - "5230:5230"
+    volumes:
+      # This persists the data from the internal /var/opt/memos directory to a docker volume.
+      - memos_data:/var/opt/memos
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  memos_data:

@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"math/big"
 	"net/mail"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -34,6 +35,22 @@ func ValidateEmail(email string) bool {
 	if _, err := mail.ParseAddress(email); err != nil {
 		return false
 	}
+	return true
+}
+
+// ValidateFilename validates the filename.
+func ValidateFilename(filename string) bool {
+	// Reject path traversal attempts and make sure no additional directories are created
+	if !filepath.IsLocal(filename) || strings.ContainsAny(filename, "/\\") {
+		return false
+	}
+
+	// Reject filenames starting or ending with spaces or periods
+	if strings.HasPrefix(filename, " ") || strings.HasSuffix(filename, " ") ||
+		strings.HasPrefix(filename, ".") || strings.HasSuffix(filename, ".") {
+		return false
+	}
+
 	return true
 }
 

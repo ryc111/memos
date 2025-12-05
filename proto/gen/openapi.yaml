@@ -442,6 +442,31 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /api/v1/instance/assets:
+        post:
+            tags:
+                - InstanceService
+            description: Uploads an instance asset.
+            operationId: InstanceService_UploadInstanceAsset
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UploadInstanceAssetRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UploadInstanceAssetResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /api/v1/instance/profile:
         get:
             tags:
@@ -2860,6 +2885,25 @@ components:
             description: |-
                 S3 configuration for cloud storage backend.
                  Reference: https://developers.cloudflare.com/r2/examples/aws/aws-sdk-go/
+        UploadInstanceAssetRequest:
+            required:
+                - filename
+            type: object
+            properties:
+                content:
+                    writeOnly: true
+                    type: string
+                    description: Input only. The content of the asset.
+                    format: bytes
+                filename:
+                    type: string
+                    description: The filename of the asset.
+        UploadInstanceAssetResponse:
+            type: object
+            properties:
+                assetUrl:
+                    type: string
+                    description: The URL of the uploaded asset.
         UpsertMemoReactionRequest:
             required:
                 - name
